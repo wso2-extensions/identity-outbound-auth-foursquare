@@ -45,6 +45,7 @@ public class FoursquareAuthenticatorConstants {
         public static final String CANONICAL_URL = "canonicalUrl";
         public static final String RESPONSE = "response";
         public static final String USER = "user";
+        public static final String CLAIM_DIALECT_URI = "http://wso2.org/foursquare/claims";
     }
 }
 

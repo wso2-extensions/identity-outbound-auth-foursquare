@@ -327,7 +327,9 @@ public class FoursquareAuthenticator extends OpenIDConnectAuthenticator implemen
         Map<ClaimMapping, String> claims = new HashMap<>();
         if (claimMap != null) {
             for (Map.Entry<String, Object> entry : claimMap.entrySet()) {
-                claims.put(ClaimMapping.build(entry.getKey(), entry.getKey(), null, false), entry.getValue().toString());
+                claims.put(ClaimMapping.build(FoursquareAuthenticatorConstants.Claim.CLAIM_DIALECT_URI + "/"
+                        + entry.getKey(), FoursquareAuthenticatorConstants.Claim.CLAIM_DIALECT_URI + "/"
+                        + entry.getKey(), null, false), entry.getValue().toString());
                 if (log.isDebugEnabled()) {
                     log.debug("Adding claim from end-point data mapping : "
                             + entry.getKey() + " <> " + " : " + entry.getValue());
@@ -335,6 +337,15 @@ public class FoursquareAuthenticator extends OpenIDConnectAuthenticator implemen
             }
         }
         return claims;
+    }
+
+    /**
+     * Get the Foursquare specific claim dialect URI.
+     * @return Claim dialect URI.
+     */
+    @Override
+    public String getClaimDialectURI() {
+        return FoursquareAuthenticatorConstants.Claim.CLAIM_DIALECT_URI;
     }
 }
 
