@@ -27,7 +27,7 @@
 
     <groupId>org.wso2.carbon.extension.identity.authenticator</groupId>
     <artifactId>org.wso2.carbon.extension.identity.authenticator.foursquare</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.1</version>
     <packaging>pom</packaging>
     <name>WSO2 Carbon Extension - Foursquare Pom</name>
     <url>http://wso2.org</url>
@@ -142,7 +142,7 @@
         <connection>scm:git:https://github.com/wso2-extensions/identity-outbound-auth-foursquare.git</connection>
         <url>https://github.com/wso2-extensions/identity-outbound-auth-foursquare.git</url>
         <developerConnection>scm:git:https://github.com/wso2-extensions/identity-outbound-auth-foursquare.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>org.wso2.carbon.extension.identity.authenticator.foursquare-1.0.1</tag>
     </scm>
 
     <build>
