@@ -31,7 +31,7 @@
         <dependency>
             <groupId>org.wso2.carbon.extension.identity.authenticator.outbound.foursquare</groupId>
             <artifactId>org.wso2.carbon.extension.identity.authenticator.foursquare.connector</artifactId>
-            <version>1.0.2-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
     <build>
