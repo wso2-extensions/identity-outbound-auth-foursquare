@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *  Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  *  WSO2 Inc. licenses this file to you under the Apache License,
  *  Version 2.0 (the "License"); you may not use this file except
@@ -30,322 +30,367 @@ import org.apache.oltu.oauth2.client.response.OAuthClientResponse;
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
-import org.apache.oltu.oauth2.common.utils.JSONUtils;
 import org.json.JSONObject;
 import org.wso2.carbon.identity.application.authentication.framework.FederatedApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
+import org.wso2.carbon.identity.application.authentication.framework.exception.ApplicationAuthenticatorException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.oidc.OIDCAuthenticatorConstants;
 import org.wso2.carbon.identity.application.authenticator.oidc.OpenIDConnectAuthenticator;
+import org.wso2.carbon.identity.application.common.model.Claim;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants;
+import org.wso2.carbon.identity.core.util.IdentityIOStreamUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.net.*;
+import java.util.*;
 
 /**
  * Authenticator of Foursquare
  */
 public class FoursquareAuthenticator extends OpenIDConnectAuthenticator implements FederatedApplicationAuthenticator {
 
-    public static final long serialVersionUID = -1804204435650065924L;
+	public static final long serialVersionUID = -1804204435650065924L;
 
-    private static Log log = LogFactory.getLog(FoursquareAuthenticator.class);
+	private static final Log log = LogFactory.getLog(FoursquareAuthenticator.class);
 
-    /**
-     * Get the authorization endpoint for Foursquare
-     */
-    @Override
-    protected String getAuthorizationServerEndpoint(Map<String, String> authenticatorProperties) {
-        return FoursquareAuthenticatorConstants.FOURSQUARE_OAUTH_ENDPOINT;
-    }
+	/**
+	 * Get the authorization endpoint for Foursquare
+	 */
+	@Override
+	protected String getAuthorizationServerEndpoint(Map<String, String> authenticatorProperties) {
+		return FoursquareAuthenticatorConstants.FOURSQUARE_OAUTH_ENDPOINT;
+	}
 
-    /**
-     * Get the token endpoint for Foursquare
-     */
-    @Override
-    protected String getTokenEndpoint(Map<String, String> authenticatorProperties) {
-        return FoursquareAuthenticatorConstants.FOURSQUARE_TOKEN_ENDPOINT;
-    }
+	/**
+	 * Get the token endpoint for Foursquare
+	 */
+	@Override
+	protected String getTokenEndpoint(Map<String, String> authenticatorProperties) {
+		return FoursquareAuthenticatorConstants.FOURSQUARE_TOKEN_ENDPOINT;
+	}
 
-    /**
-     * Always return false as there is no ID token in Foursquare OAuth.
-     *
-     * @param authenticatorProperties Authenticator properties.
-     * @return False
-     */
-    @Override
-    protected boolean requiredIDToken(Map<String, String> authenticatorProperties) {
-        return false;
-    }
+	/**
+	 * Get the user info endpoint.
+	 */
+	@Override
+	protected String getUserInfoEndpoint(OAuthClientResponse token, Map<String, String> authenticatorProperties) {
+		return FoursquareAuthenticatorConstants.FOURSQUARE_USER_INFO_ENDPOINT +
+		       authenticatorProperties.get(FoursquareAuthenticatorConstants.PROFILE_VERSION);
+	}
 
-    @Override
-    public String getFriendlyName() {
-        return FoursquareAuthenticatorConstants.FOURSQUARE_CONNECTOR_FRIENDLY_NAME;
-    }
+	/**
+	 * Always return false as there is no ID token in Foursquare OAuth.
+	 *
+	 * @param authenticatorProperties Authenticator properties.
+	 * @return False
+	 */
+	@Override
+	protected boolean requiredIDToken(Map<String, String> authenticatorProperties) {
+		return false;
+	}
 
-    @Override
-    public String getName() {
-        return FoursquareAuthenticatorConstants.FOURSQUARE_CONNECTOR_NAME;
-    }
+	@Override
+	public String getFriendlyName() {
+		return FoursquareAuthenticatorConstants.FOURSQUARE_CONNECTOR_FRIENDLY_NAME;
+	}
 
-    /**
-     * Get configuration properties.
-     *
-     * @return Properties list.
-     */
-    @Override
-    public List<Property> getConfigurationProperties() {
+	@Override
+	public String getName() {
+		return FoursquareAuthenticatorConstants.FOURSQUARE_CONNECTOR_NAME;
+	}
 
-        List<Property> configProperties = new ArrayList<Property>();
+	/**
+	 * Get configuration properties.
+	 *
+	 * @return Properties list.
+	 */
+	@Override
+	public List<Property> getConfigurationProperties() {
 
-        Property clientId = new Property();
-        clientId.setName(OIDCAuthenticatorConstants.CLIENT_ID);
-        clientId.setDisplayName("Client Id");
-        clientId.setRequired(true);
-        clientId.setDescription("Enter Foursquare client identifier value");
-        clientId.setDisplayOrder(0);
-        configProperties.add(clientId);
+		List<Property> configProperties = new ArrayList<Property>();
 
-        Property clientSecret = new Property();
-        clientSecret.setName(OIDCAuthenticatorConstants.CLIENT_SECRET);
-        clientSecret.setDisplayName("Client Secret");
-        clientSecret.setRequired(true);
-        clientSecret.setConfidential(true);
-        clientSecret.setDescription("Enter Foursquare client secret value");
-        clientSecret.setDisplayOrder(1);
-        configProperties.add(clientSecret);
+		Property clientId = new Property();
+		clientId.setName(OIDCAuthenticatorConstants.CLIENT_ID);
+		clientId.setDisplayName("Client Id");
+		clientId.setRequired(true);
+		clientId.setDescription("Enter Foursquare client identifier value");
+		clientId.setDisplayOrder(0);
+		configProperties.add(clientId);
 
-        Property callbackUrl = new Property();
-        callbackUrl.setDisplayName("Callback URL");
-        callbackUrl.setName(IdentityApplicationConstants.OAuth2.CALLBACK_URL);
-        callbackUrl.setDescription("Enter the callback url");
-        callbackUrl.setDisplayOrder(2);
-        configProperties.add(callbackUrl);
+		Property clientSecret = new Property();
+		clientSecret.setName(OIDCAuthenticatorConstants.CLIENT_SECRET);
+		clientSecret.setDisplayName("Client Secret");
+		clientSecret.setRequired(true);
+		clientSecret.setConfidential(true);
+		clientSecret.setDescription("Enter Foursquare client secret value");
+		clientSecret.setDisplayOrder(1);
+		configProperties.add(clientSecret);
 
-        Property profileVersion = new Property();
-        profileVersion.setDisplayName("Profile Version");
-        profileVersion.setName(FoursquareAuthenticatorConstants.PROFILE_VERSION);
-        profileVersion.setDescription("Enter the profile version");
-        profileVersion.setDisplayOrder(3);
-        configProperties.add(profileVersion);
+		Property callbackUrl = new Property();
+		callbackUrl.setDisplayName("Callback URL");
+		callbackUrl.setName(IdentityApplicationConstants.OAuth2.CALLBACK_URL);
+		callbackUrl.setDescription("Enter the callback URL");
+		callbackUrl.setDisplayOrder(2);
+		configProperties.add(callbackUrl);
 
-        return configProperties;
-    }
+		Property profileVersion = new Property();
+		profileVersion.setDisplayName("Profile Version");
+		profileVersion.setName(FoursquareAuthenticatorConstants.PROFILE_VERSION);
+		profileVersion.setDescription("Enter the profile version");
+		profileVersion.setDisplayOrder(3);
+		configProperties.add(profileVersion);
 
-    @Override
-    protected void processAuthenticationResponse(HttpServletRequest request, HttpServletResponse response,
-                                                 AuthenticationContext context) throws AuthenticationFailedException {
-        try {
-            Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
-            String clientId = authenticatorProperties.get(OIDCAuthenticatorConstants.CLIENT_ID);
-            String clientSecret = authenticatorProperties.get(OIDCAuthenticatorConstants.CLIENT_SECRET);
-            String profileVersion = authenticatorProperties.get(FoursquareAuthenticatorConstants.PROFILE_VERSION);
-            String tokenEndPoint = getTokenEndpoint(authenticatorProperties);
-            String callbackUrl = getCallbackUrl(authenticatorProperties);
+		return configProperties;
+	}
 
-            OAuthAuthzResponse authorizationResponse = OAuthAuthzResponse.oauthCodeAuthzResponse(request);
-            String code = authorizationResponse.getCode();
-            OAuthClientRequest accessRequest =
-                    getAccessRequest(tokenEndPoint, clientId, code, clientSecret, callbackUrl);
-            OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
-            OAuthClientResponse oAuthResponse = getOauthResponse(oAuthClient, accessRequest);
+	/**
+	 * This method are overridden for extra claim request to Foursquare end-point.
+	 *
+	 * @param request  the http request
+	 * @param response the http response
+	 * @param context  the authentication context
+	 * @throws AuthenticationFailedException
+	 */
+	@Override
+	protected void processAuthenticationResponse(HttpServletRequest request, HttpServletResponse response,
+	                                                 AuthenticationContext context)
+			throws AuthenticationFailedException {
+		try {
+			Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
+			String clientId = authenticatorProperties.get(OIDCAuthenticatorConstants.CLIENT_ID);
+			String clientSecret = authenticatorProperties.get(OIDCAuthenticatorConstants.CLIENT_SECRET);
+			String tokenEndPoint = getTokenEndpoint(authenticatorProperties);
+			if (tokenEndPoint == null) {
+				tokenEndPoint = authenticatorProperties.get(FoursquareAuthenticatorConstants.OAUTH2_TOKEN_URL);
+			}
+			String callbackurl = getCallbackUrl(authenticatorProperties);
+			OAuthAuthzResponse authzResponse = OAuthAuthzResponse.oauthCodeAuthzResponse(request);
+			String code = authzResponse.getCode();
+			OAuthClientRequest accessRequest;
+			try {
+				accessRequest =
+						OAuthClientRequest.tokenLocation(tokenEndPoint).setGrantType(GrantType.AUTHORIZATION_CODE)
+						                  .setClientId(clientId).setClientSecret(clientSecret)
+						                  .setRedirectURI(callbackurl).setCode(code).buildBodyMessage();
+				// create OAuth client that uses custom http client under the hood
+				OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
+				OAuthClientResponse oAuthResponse;
+				oAuthResponse = oAuthClient.accessToken(accessRequest);
+				String accessToken = oAuthResponse.getParam(FoursquareAuthenticatorConstants.ACCESS_TOKEN);
+				if (StringUtils.isNotEmpty(accessToken)) {
+					Map<ClaimMapping, String> claims = buildClaims(oAuthResponse, authenticatorProperties);
+					if (claims != null && !claims.isEmpty()) {
+						//Find the subject from the IDP claim mapping, subject Claim URI.
+						String subjectFromClaims = FrameworkUtils
+								.getFederatedSubjectFromClaims(context.getExternalIdP().getIdentityProvider(), claims);
+						associateSubjectFromClaims(context, subjectFromClaims, claims);
+					} else {
+						throw new AuthenticationFailedException(
+								"Claims for the user not found for access Token : " + accessToken);
+					}
+				} else {
+					throw new AuthenticationFailedException("Could not receive a valid access token from Foursquare");
+				}
+			} catch (OAuthSystemException e) {
+				throw new AuthenticationFailedException("Exception while building access token request", e);
+			} catch (ApplicationAuthenticatorException e) {
+				throw new AuthenticationFailedException("Exception while building the claim mapping", e);
+			}
+		} catch (OAuthProblemException e) {
+			throw new AuthenticationFailedException("Exception while getting the access token form the response", e);
+		}
+	}
 
-            String accessToken = oAuthResponse.getParam(FoursquareAuthenticatorConstants.ACCESS_TOKEN);
+	/**
+	 * This method is to get the Foursquare user details.
+	 *
+	 * @param url         user info endpoint.
+	 * @param accessToken access token.
+	 * @return user info
+	 * @throws ApplicationAuthenticatorException
+	 */
+	private JSONObject fetchUserInfo(String url, String accessToken) throws ApplicationAuthenticatorException {
+		if (log.isDebugEnabled()) {
+			log.debug("Sending the request for getting the user info");
+		}
+		StringBuilder jsonResponseCollector = new StringBuilder();
+		BufferedReader bufferedReader = null;
+		HttpURLConnection httpConnection = null;
+		JSONObject jsonObj = null;
+		try {
+			URL obj = new URL(url + "&" + FoursquareAuthenticatorConstants.FOURSQUARE_OAUTH2_ACCESS_TOKEN_PARAMETER +
+			                  "=" + accessToken);
+			URLConnection connection = obj.openConnection();
+			// Cast to a HttpURLConnection
+			if (connection instanceof HttpURLConnection) {
+				httpConnection = (HttpURLConnection) connection;
+				httpConnection.setConnectTimeout(FoursquareAuthenticatorConstants.CONNECTION_TIMEOUT_VALUE);
+				httpConnection.setReadTimeout(FoursquareAuthenticatorConstants.READ_TIMEOUT_VALUE);
+				httpConnection.setRequestMethod(FoursquareAuthenticatorConstants.HTTP_GET_METHOD);
+				bufferedReader = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
+			} else {
+				throw new ApplicationAuthenticatorException("Exception while casting the HttpURLConnection");
+			}
+			String inputLine = bufferedReader.readLine();
+			while (inputLine != null) {
+				jsonResponseCollector.append(inputLine).append("\n");
+				inputLine = bufferedReader.readLine();
+			}
+			jsonObj = new JSONObject(jsonResponseCollector.toString());
+		} catch (MalformedURLException e) {
+			throw new ApplicationAuthenticatorException(
+					"MalformedURLException while generating the user info URL: " + url, e);
+		} catch (ProtocolException e) {
+			throw new ApplicationAuthenticatorException("ProtocolException while setting the request method: " +
+			                                            FoursquareAuthenticatorConstants.HTTP_GET_METHOD +
+			                                            " for the URL: " + url, e);
+		} catch (IOException e) {
+			throw new ApplicationAuthenticatorException("Error when reading the response from " + url +
+			                                            "to update user claims", e);
+		} finally {
+			IdentityIOStreamUtils.closeReader(bufferedReader);
+			if (httpConnection != null) {
+				httpConnection.disconnect();
+			}
+		}
+		if (log.isDebugEnabled()) {
+			log.debug("Receiving the response for the User info: " + jsonResponseCollector.toString());
+		}
+		return jsonObj;
+	}
 
-            if (StringUtils.isBlank(accessToken)) {
-                throw new AuthenticationFailedException("Access token is empty or null");
-            }
-            context.setProperty(OIDCAuthenticatorConstants.ACCESS_TOKEN, accessToken);
+	/**
+	 * Get the Foursquare specific claim dialect URI.
+	 *
+	 * @return Claim dialect URI.
+	 */
+	@Override
+	public String getClaimDialectURI() {
+		return FoursquareAuthenticatorConstants.CLAIM_DIALECT_URI;
+	}
 
-            AuthenticatedUser authenticatedUserObj = null;
-            Map<String, Object> userClaims = getUserClaims(oAuthResponse, profileVersion);
-            String userId = null;
-            if (userClaims != null) {
-                userId = (String) userClaims.get(FoursquareAuthenticatorConstants.FOURSQUARE_USER_ID);
-            }
-            if (userClaims != null) {
-                authenticatedUserObj = AuthenticatedUser
-                        .createFederateAuthenticatedUserFromSubjectIdentifier(userId);
-            }
-            if (authenticatedUserObj != null) {
-                authenticatedUserObj.setAuthenticatedSubjectIdentifier((String) userClaims.get(FoursquareAuthenticatorConstants.FOURSQUARE_USER_ID));
-                authenticatedUserObj.setUserAttributes(getSubjectAttributes(userClaims));
-            }
-            context.setSubject(authenticatedUserObj);
-        } catch (OAuthProblemException e) {
-            throw new AuthenticationFailedException("Authentication process failed", e);
-        }
-    }
+	/**
+	 * This method is to build the claims for the user info.
+	 *
+	 * @param token                   token
+	 * @param authenticatorProperties authenticatorProperties
+	 * @return claims
+	 */
+	private Map<ClaimMapping, String> buildClaims(OAuthClientResponse token,
+	                                              Map<String, String> authenticatorProperties)
+			throws ApplicationAuthenticatorException {
+		Map<ClaimMapping, String> claims = new HashMap<>();
+		String accessToken = token.getParam("access_token");
+		String url = getUserInfoEndpoint(token, authenticatorProperties);
+		JSONObject userData;
+		try {
+			userData = fetchUserInfo(url, accessToken);
+			if (userData.length() == 0) {
+				if (log.isDebugEnabled()) {
+					log.debug("Unable to fetch user claims. Proceeding without user claims");
+				}
+				return claims;
+			}
+			JSONObject userClaims = new JSONObject();
+			JSONObject userObj = userData.getJSONObject(FoursquareAuthenticatorConstants.RESPONSE)
+			                             .getJSONObject(FoursquareAuthenticatorConstants.USER);
 
-    private OAuthClientRequest getAccessRequest(String tokenEndPoint, String clientId, String code, String clientSecret,
-                                                String callbackurl) throws AuthenticationFailedException {
-        OAuthClientRequest accessRequest;
-        try {
-            accessRequest = OAuthClientRequest.tokenLocation(tokenEndPoint)
-                    .setGrantType(GrantType.AUTHORIZATION_CODE).setClientId(clientId)
-                    .setClientSecret(clientSecret).setRedirectURI(callbackurl).setCode(code)
-                    .buildBodyMessage();
-        } catch (OAuthSystemException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("Exception while building request for request access token", e);
-            }
-            throw new AuthenticationFailedException(e.getMessage(), e);
-        }
-        return accessRequest;
-    }
+			if (userObj.has(FoursquareAuthenticatorConstants.ID) &&
+			    StringUtils.isNotEmpty(userObj.get(FoursquareAuthenticatorConstants.ID).toString())) {
+				userClaims.put(FoursquareAuthenticatorConstants.ID, userObj.get(FoursquareAuthenticatorConstants.ID));
+			}
+			if (userObj.has(FoursquareAuthenticatorConstants.FIRST_NAME) &&
+			    StringUtils.isNotEmpty(userObj.get(FoursquareAuthenticatorConstants.FIRST_NAME).toString())) {
+				userClaims.put(FoursquareAuthenticatorConstants.FIRST_NAME,
+				               userObj.get(FoursquareAuthenticatorConstants.FIRST_NAME));
+			}
+			if (userObj.has(FoursquareAuthenticatorConstants.GENDER) &&
+			    StringUtils.isNotEmpty(userObj.get(FoursquareAuthenticatorConstants.GENDER).toString())) {
+				userClaims.put(FoursquareAuthenticatorConstants.GENDER,
+				               userObj.get(FoursquareAuthenticatorConstants.GENDER));
+			}
+			if (userObj.has(FoursquareAuthenticatorConstants.LAST_NAME) &&
+			    StringUtils.isNotEmpty(userObj.get(FoursquareAuthenticatorConstants.LAST_NAME).toString())) {
+				userClaims.put(FoursquareAuthenticatorConstants.LAST_NAME,
+				               userObj.get(FoursquareAuthenticatorConstants.LAST_NAME));
+			}
+			if (userObj.getJSONObject(FoursquareAuthenticatorConstants.CONTACT)
+			           .has(FoursquareAuthenticatorConstants.EMAIL) && StringUtils.isNotEmpty(
+					userObj.getJSONObject(FoursquareAuthenticatorConstants.CONTACT)
+					       .get(FoursquareAuthenticatorConstants.EMAIL).toString())) {
+				userClaims.put(FoursquareAuthenticatorConstants.EMAIL,
+				               userObj.getJSONObject(FoursquareAuthenticatorConstants.CONTACT)
+				                      .get(FoursquareAuthenticatorConstants.EMAIL));
+			}
+			if (userObj.has(FoursquareAuthenticatorConstants.RELATIONSHIP) &&
+			    StringUtils.isNotEmpty(userObj.get(FoursquareAuthenticatorConstants.RELATIONSHIP).toString())) {
+				userClaims.put(FoursquareAuthenticatorConstants.RELATIONSHIP,
+				               userObj.get(FoursquareAuthenticatorConstants.RELATIONSHIP));
+			}
+			if (userObj.has(FoursquareAuthenticatorConstants.CANONICAL_URL)) {
+				userClaims.put(FoursquareAuthenticatorConstants.CANONICAL_URL,
+				               userObj.get(FoursquareAuthenticatorConstants.CANONICAL_URL));
+			}
+			if (userObj.has(FoursquareAuthenticatorConstants.HOME_CITY) &&
+			    StringUtils.isNotEmpty(userObj.get(FoursquareAuthenticatorConstants.HOME_CITY).toString())) {
+					userClaims.put(FoursquareAuthenticatorConstants.HOME_CITY,
+					               userObj.get(FoursquareAuthenticatorConstants.HOME_CITY));
+			}
+			if (userObj.has(FoursquareAuthenticatorConstants.BIO) &&
+			    StringUtils.isNotEmpty(userObj.get(FoursquareAuthenticatorConstants.BIO).toString())) {
+				userClaims.put(FoursquareAuthenticatorConstants.BIO, userObj.get(FoursquareAuthenticatorConstants.BIO));
+			}
 
-    private OAuthClientResponse getOauthResponse(OAuthClient oAuthClient, OAuthClientRequest accessRequest)
-            throws AuthenticationFailedException {
-        OAuthClientResponse oAuthResponse = null;
-        try {
-            oAuthResponse = oAuthClient.accessToken(accessRequest);
-        } catch (OAuthSystemException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("Exception while requesting access token", e);
-            }
-            throw new AuthenticationFailedException(e.getMessage(), e);
-        } catch (OAuthProblemException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("Exception while requesting access token", e);
-            }
-        }
-        return oAuthResponse;
-    }
+			Iterator<?> keys = userClaims.keys();
+			while (keys.hasNext()) {
+				String key = (String) keys.next();
+				String value = userClaims.getString(key);
+				String claimUri = FoursquareAuthenticatorConstants.CLAIM_DIALECT_URI + "/" + key;
+				ClaimMapping claimMapping = new ClaimMapping();
+				Claim claim = new Claim();
+				claim.setClaimUri(claimUri);
+				claimMapping.setRemoteClaim(claim);
+				claimMapping.setLocalClaim(claim);
+				claims.put(claimMapping, value);
+			}
+		} catch (ApplicationAuthenticatorException e) {
+			throw new ApplicationAuthenticatorException("Exception while fetching the user info from " + url, e);
+		}
+		return claims;
+	}
 
-    @Override
-    public String sendRequest(String url, String accessToken) throws IOException {
-        if (log.isDebugEnabled()) {
-            log.debug("Claim URL: " + url + " & Access-Token : " + accessToken);
-        }
-        if (StringUtils.isEmpty(url)) {
-            return "";
-        } else {
-            URL obj = new URL(url + "&" + FoursquareAuthenticatorConstants.FOURSQUARE_OAUTH2_ACCESS_TOKEN_PARAMETER +
-                    "=" + accessToken);
-            HttpURLConnection urlConnection = (HttpURLConnection) obj.openConnection();
-
-            urlConnection.setRequestMethod(FoursquareAuthenticatorConstants.HTTP_METHOD);
-            BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-            StringBuilder builder = new StringBuilder();
-            String inputLine = in.readLine();
-            while (inputLine != null) {
-                builder.append(inputLine).append("\n");
-                inputLine = in.readLine();
-            }
-            in.close();
-
-            if (log.isDebugEnabled()) {
-                log.debug("response: " + builder.toString());
-            }
-            return builder.toString();
-        }
-    }
-
-    /**
-     * Get the user claim
-     *
-     * @param token OAuthClientResponse
-     * @return
-     */
-    private Map<String, Object> getUserClaims(OAuthClientResponse token, String profileVersion) {
-        Map<String, Object> userClaims;
-        try {
-            String json = sendRequest(FoursquareAuthenticatorConstants.FOURSQUARE_USER_INFO_ENDPOINT + profileVersion,
-                    token.getParam(FoursquareAuthenticatorConstants.ACCESS_TOKEN));
-            JSONObject obj = new JSONObject(json);
-            String id = obj.getJSONObject(FoursquareAuthenticatorConstants.Claim.RESPONSE)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.USER)
-                    .getString(FoursquareAuthenticatorConstants.Claim.ID);
-            String fName = obj.getJSONObject(FoursquareAuthenticatorConstants.Claim.RESPONSE)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.USER)
-                    .getString(FoursquareAuthenticatorConstants.Claim.FIRST_NAME);
-            String lName = obj.getJSONObject(FoursquareAuthenticatorConstants.Claim.RESPONSE)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.USER)
-                    .getString(FoursquareAuthenticatorConstants.Claim.LAST_NAME);
-            String email = obj.getJSONObject(FoursquareAuthenticatorConstants.Claim.RESPONSE)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.USER)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.CONTACT)
-                    .getString(FoursquareAuthenticatorConstants.Claim.EMAIL);
-            String gender = obj.getJSONObject(FoursquareAuthenticatorConstants.Claim.RESPONSE)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.USER)
-                    .getString(FoursquareAuthenticatorConstants.Claim.GENDER);
-            String relationship = obj.getJSONObject(FoursquareAuthenticatorConstants.Claim.RESPONSE)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.USER)
-                    .getString(FoursquareAuthenticatorConstants.Claim.RELATIONSHIP);
-            String canonicalUrl = obj.getJSONObject(FoursquareAuthenticatorConstants.Claim.RESPONSE)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.USER)
-                    .getString(FoursquareAuthenticatorConstants.Claim.CANONICAL_URL);
-            String homeCity = obj.getJSONObject(FoursquareAuthenticatorConstants.Claim.RESPONSE)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.USER)
-                    .getString(FoursquareAuthenticatorConstants.Claim.HOME_CITY);
-            String bio = obj.getJSONObject(FoursquareAuthenticatorConstants.Claim.RESPONSE)
-                    .getJSONObject(FoursquareAuthenticatorConstants.Claim.USER)
-                    .getString(FoursquareAuthenticatorConstants.Claim.BIO);
-
-            String jsonClaim = "{\"" + FoursquareAuthenticatorConstants.Claim.ID + "\":\"" + id + "\""
-                    + ",\"" + FoursquareAuthenticatorConstants.Claim.FIRST_NAME + "\":\"" + fName + "\", \""
-                    + FoursquareAuthenticatorConstants.Claim.LAST_NAME + "\":\"" + lName + "\"" + ",\""
-                    + FoursquareAuthenticatorConstants.Claim.GENDER + "\":\"" + gender + "\"" + ",\""
-                    + FoursquareAuthenticatorConstants.Claim.RELATIONSHIP + "\":\"" + relationship + "\"" + ",\""
-                    + FoursquareAuthenticatorConstants.Claim.CANONICAL_URL + "\":\"" + canonicalUrl + "\"" + ",\""
-                    + FoursquareAuthenticatorConstants.Claim.HOME_CITY + "\":\"" + homeCity + "\"" + ",\""
-                    + FoursquareAuthenticatorConstants.Claim.BIO + "\":\"" + bio + "\"" + ",\""
-                    + FoursquareAuthenticatorConstants.Claim.EMAIL + "\":\"" + email + "\"}";
-
-            userClaims = JSONUtils.parseJSON(jsonClaim);
-            return userClaims;
-        } catch (IOException e) {
-            log.error("Exception while sending the request with access token to the use information URL"
-                    + e.getMessage(), e);
-        } catch (org.json.JSONException e) {
-            log.error("Exception while getting the child json object from the json parent object" + e.getMessage(), e);
-        } catch (Exception e) {
-            log.error("Exception while parsing the string to the json parser" + e.getMessage(), e);
-        }
-        return null;
-    }
-
-    /**
-     * Get subject attributes.
-     *
-     * @param claimMap Map<String, Object>
-     * @return
-     */
-    protected Map<ClaimMapping, String> getSubjectAttributes(Map<String, Object> claimMap) {
-        Map<ClaimMapping, String> claims = new HashMap<>();
-        if (claimMap != null) {
-            for (Map.Entry<String, Object> entry : claimMap.entrySet()) {
-                claims.put(ClaimMapping.build(FoursquareAuthenticatorConstants.Claim.CLAIM_DIALECT_URI + "/"
-                        + entry.getKey(), FoursquareAuthenticatorConstants.Claim.CLAIM_DIALECT_URI + "/"
-                        + entry.getKey(), null, false), entry.getValue().toString());
-                if (log.isDebugEnabled()) {
-                    log.debug("Adding claim from end-point data mapping : "
-                            + entry.getKey() + " <> " + " : " + entry.getValue());
-                }
-            }
-        }
-        return claims;
-    }
-
-    /**
-     * Get the Foursquare specific claim dialect URI.
-     * @return Claim dialect URI.
-     */
-    @Override
-    public String getClaimDialectURI() {
-        return FoursquareAuthenticatorConstants.Claim.CLAIM_DIALECT_URI;
-    }
+	/**
+	 * This method is to configure the subject identifier from the claims.
+	 *
+	 * @param context           AuthenticationContext
+	 * @param subjectFromClaims subject identifier claim
+	 * @param claims            claims
+	 */
+	private void associateSubjectFromClaims(AuthenticationContext context, String subjectFromClaims,
+	                                        Map<ClaimMapping, String> claims) {
+		//Use default claim URI on the Authenticator if claim mapping is not defined by the admin
+		if (StringUtils.isBlank(subjectFromClaims)) {
+			String userId =
+					FoursquareAuthenticatorConstants.CLAIM_DIALECT_URI + "/" + FoursquareAuthenticatorConstants.ID;
+			ClaimMapping claimMapping = new ClaimMapping();
+			Claim claim = new Claim();
+			claim.setClaimUri(userId);
+			claimMapping.setRemoteClaim(claim);
+			claimMapping.setLocalClaim(claim);
+			subjectFromClaims = claims.get(claimMapping);
+		}
+		AuthenticatedUser authenticatedUserObj =
+				AuthenticatedUser.createFederateAuthenticatedUserFromSubjectIdentifier(subjectFromClaims);
+		context.setSubject(authenticatedUserObj);
+		authenticatedUserObj.setUserAttributes(claims);
+	}
 }
-
