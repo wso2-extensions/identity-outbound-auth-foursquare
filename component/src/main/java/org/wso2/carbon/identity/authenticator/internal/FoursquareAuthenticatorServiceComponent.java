@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2015, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *  Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  *  WSO2 Inc. licenses this file to you under the Apache License,
  *  Version 2.0 (the "License"); you may not use this file except
@@ -32,10 +32,14 @@ import java.util.Hashtable;
  */
 public class FoursquareAuthenticatorServiceComponent {
 
-    private static Log log = LogFactory.getLog(FoursquareAuthenticatorServiceComponent.class);
+    private static final Log log = LogFactory.getLog(FoursquareAuthenticatorServiceComponent.class);
 
+    /**
+     * This method is to register the Foursquare authenticator service.
+     *
+     * @param ctxt the Component Context
+     */
     protected void activate(ComponentContext ctxt) {
-        try {
             FoursquareAuthenticator authenticator = new FoursquareAuthenticator();
             Hashtable<String, String> props = new Hashtable<String, String>();
             ctxt.getBundleContext().registerService(ApplicationAuthenticator.class.getName(),
@@ -43,11 +47,13 @@ public class FoursquareAuthenticatorServiceComponent {
             if (log.isDebugEnabled()) {
                 log.debug("Foursquare authenticator is activated");
             }
-        } catch (Throwable e) {
-            log.fatal("Error while activating the Foursquare authenticator ", e);
-        }
     }
 
+    /**
+     * This method is to deactivate the Foursquare authenticator the service.
+     *
+     * @param ctxt the Component Context
+     */
     protected void deactivate(ComponentContext ctxt) {
         if (log.isDebugEnabled()) {
             log.debug("Foursquare authenticator is deactivated");

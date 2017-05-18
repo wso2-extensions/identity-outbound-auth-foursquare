@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- ~ Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ ~ Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  ~
  ~ WSO2 Inc. licenses this file to you under the Apache License,
  ~ Version 2.0 (the "License"); you may not use this file except
@@ -328,8 +328,16 @@
         <javax.servelet.jstl.version>1.2</javax.servelet.jstl.version>
         <commons-codec.version>1.4.0.wso2v1</commons-codec.version>
         <axiom.version>1.2.11-wso2v6</axiom.version>
+        <org.json>[3.0,4)</org.json>
         <org.wso2.securevault.version>1.0.0-wso2v2</org.wso2.securevault.version>
         <commons-lang.wso2.version>2.6.0.wso2v1</commons-lang.wso2.version>
         <encoder.wso2.version>1.2.0.wso2v1</encoder.wso2.version>
+        <org.apache.oltu.oauth2.client>0.31</org.apache.oltu.oauth2.client>
+        <org.apache.oltu.oauth2.common>1.0.1</org.apache.oltu.oauth2.common>
+        <commons-logging.osgi.version.range>[1.2,2.0)</commons-logging.osgi.version.range>
+        <commons-lang.osgi.version.range>[2.6,3)</commons-lang.osgi.version.range>
+        <identity.outbound.auth.oidc.import.version.range>[5.0.0, 6.0.0)</identity.outbound.auth.oidc.import.version.range>
+        <osgi.service.component.imp.pkg.version.range>[1.2.0, 2.0.0)</osgi.service.component.imp.pkg.version.range>
+        <carbon.identity.framework.import.version.range>[5.0.0, 6.0.0)</carbon.identity.framework.import.version.range>
     </properties>
 </project>
