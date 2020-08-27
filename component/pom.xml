@@ -19,7 +19,7 @@
     <parent>
         <groupId>org.wso2.carbon.extension.identity.authenticator.outbound.foursquare</groupId>
         <artifactId>identity-outbound-auth-foursquare</artifactId>
-        <version>1.0.4-SNAPSHOT</version>
+        <version>1.0.4</version>
     </parent>
     <artifactId>org.wso2.carbon.extension.identity.authenticator.foursquare.connector</artifactId>
     <packaging>bundle</packaging>
