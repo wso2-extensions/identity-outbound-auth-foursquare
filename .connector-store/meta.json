@@ -2,8 +2,8 @@
     "name": "Foursquare",
     "owner": "WSO2",
     "category": "Federated authenticator",
-    "documentationUrl": "https://docs.wso2.com/display/ISCONNECTORS/Foursquare+Authenticator",
-    "description": "The Foursquare authenticator allows you to authenticate user using Foursquare through WSO2 IS.",
+    "documentationUrl": "https://github.com/wso2-extensions/identity-outbound-auth-foursquare/blob/master/README.md",
+    "description": "The Foursquare authenticator allows you to authenticate users using Foursquare through WSO2 Identity Server.",
     "status": "Active",
     "labels": ["SocialLogin"],
     "releases": [
